@@ -13,7 +13,7 @@ const BOT_TOKEN     = process.env.BOT_TOKEN;
 const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID;
 const MINI_APP_URL  = process.env.MINI_APP_URL || 'https://t.me/turmak_bot/app';
 const API_BASE      = process.env.API_BASE     || 'https://turmak-api.vercel.app/api';
-const PORT          = process.env.PORT         || 3001;
+const PORT          = parseInt(process.env.PORT) || 3001;
 
 if (!BOT_TOKEN) {
     console.error('❌ BOT_TOKEN is not set in .env');
@@ -258,7 +258,7 @@ app.post('/bot-webhook', async (req, res) => {
         res.sendStatus(200);
     } catch (err) {
         console.error('Webhook error:', err.message);
-        res.sendStatus(500);
+        res.sendStatus(200); // Return 200 to prevent Telegram from retrying
     }
 });
 
@@ -266,9 +266,12 @@ app.get('/setup-webhook', async (req, res) => {
     const { url } = req.query;
     if (!url) return res.status(400).json({ error: 'url query param required' });
     try {
+        const parsedUrl = new URL(url);
+        if (parsedUrl.protocol !== 'https:') return res.status(400).json({ error: 'HTTPS URL required' });
         await bot.telegram.setWebhook(`${url}/bot-webhook`);
         res.json({ ok: true, webhook: `${url}/bot-webhook` });
     } catch (err) {
+        if (err instanceof TypeError) return res.status(400).json({ error: 'Invalid URL' });
         res.status(500).json({ error: err.message });
     }
 });
@@ -282,22 +285,31 @@ const ROLE_LABELS = {
 };
 const ROLE_EMOJI = { user: '👤', master: '✂️', owner: '🏪' };
 
+function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 app.post('/waitlist', async (req, res) => {
     const { name, phone, role, telegram } = req.body || {};
     if (!name || !phone || !role)
         return res.status(400).json({ success: false, error: 'Missing required fields' });
 
+    if (typeof name !== 'string' || typeof phone !== 'string')
+        return res.status(400).json({ success: false, error: 'Invalid field types' });
+    const safeName = escapeHtml(name.slice(0, 100));
+    const safePhone = escapeHtml(phone.slice(0, 20));
+    const safeTg = telegram ? `@${escapeHtml(telegram.replace(/^@/, '').slice(0, 50))}` : '—';
+
     const emoji = ROLE_EMOJI[role] || '👤';
     const label = ROLE_LABELS[role]
         ? `${ROLE_LABELS[role].uz} / ${ROLE_LABELS[role].ru} / ${ROLE_LABELS[role].en}`
-        : role;
-    const tg = telegram ? `@${telegram.replace(/^@/, '')}` : '—';
+        : escapeHtml(role);
     const message =
         `🎉 <b>Yangi Waitlist ro'yxati!</b>\n\n` +
-        `👤 <b>Ism:</b> ${name}\n` +
-        `📞 <b>Telefon:</b> ${phone}\n` +
+        `👤 <b>Ism:</b> ${safeName}\n` +
+        `📞 <b>Telefon:</b> ${safePhone}\n` +
         `${emoji} <b>Tur:</b> ${label}\n` +
-        `📱 <b>Telegram:</b> ${tg}\n\n` +
+        `📱 <b>Telegram:</b> ${safeTg}\n\n` +
         `#waitlist #turmak`;
     try {
         const result = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -347,3 +359,4 @@ if (process.env.VERCEL) {
 }
 
 module.exports = app;
+module.exports.showMainMenu = showMainMenu;

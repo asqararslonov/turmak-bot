@@ -21,7 +21,11 @@ const onboardScene = new Scenes.WizardScene(
         if (!ctx.message?.text) {
             return ctx.reply('Iltimos, ismingizni matn ko\'rinishida kiriting 👤');
         }
-        ctx.session.onboard.name = ctx.message.text.trim();
+        const name = ctx.message.text.trim();
+        if (name.length < 2 || name.length > 100) {
+            return ctx.reply('Ism 2-100 belgi oralig\'ida bo\'lishi kerak 👤');
+        }
+        ctx.session.onboard.name = name;
         await ctx.reply(
             'Jinsingiz? 👤',
             Markup.inlineKeyboard([
@@ -37,7 +41,9 @@ const onboardScene = new Scenes.WizardScene(
             return ctx.reply('Iltimos, jinsingizni tanlang 👇');
         }
         await ctx.answerCbQuery();
-        ctx.session.onboard.gender = ctx.callbackQuery.data.split(':')[1];
+        const gender = ctx.callbackQuery.data.split(':')[1];
+        if (!['male', 'female'].includes(gender)) return ctx.reply('Iltimos, jinsingizni tanlang 👇');
+        ctx.session.onboard.gender = gender;
 
         const buttons = CITIES.map(c => [Markup.button.callback(c, `city:${c}`)]);
         await ctx.reply(
@@ -53,7 +59,9 @@ const onboardScene = new Scenes.WizardScene(
             return ctx.reply('Iltimos, shahringizni tanlang 👇');
         }
         await ctx.answerCbQuery();
-        ctx.session.onboard.city = ctx.callbackQuery.data.split(':')[1];
+        const city = ctx.callbackQuery.data.split(':')[1];
+        if (!CITIES.includes(city)) return ctx.reply('Iltimos, shahringizni tanlang 👇');
+        ctx.session.onboard.city = city;
 
         await ctx.reply(
             '📱 Telefon raqamingizni ulashing.\nBu faqat bron qilish uchun kerak va xavfsiz saqlanadi.',

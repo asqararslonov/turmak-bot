@@ -4,6 +4,10 @@ const { formatDate, statusBadge } = require('../utils');
 
 const bookingsScene = new Scenes.BaseScene('bookings');
 
+function esc(str) {
+    return String(str || '').replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
+}
+
 async function showBookings(ctx) {
     if (!ctx.session.registered) {
         await ctx.reply('Iltimos, avval ro\'yxatdan o\'ting. /start');
@@ -41,7 +45,7 @@ async function showBookings(ctx) {
         const svcName = b.service?.name || '?';
         const dateStr = formatDate(b.day);
         const badge = statusBadge(b.status);
-        return `${i + 1}. *${dateStr}* ${b.time} — ${barberName}\n   ${svcName} • ${badge}`;
+        return `${i + 1}. *${dateStr}* ${b.time} — ${esc(barberName)}\n   ${esc(svcName)} • ${badge}`;
     }).join('\n\n');
 
     // Cancel buttons for pending/confirmed only
@@ -103,7 +107,7 @@ bookingsScene.on('callback_query', async (ctx) => {
             await api.deleteBooking(ctx.session.token, bookingId);
             await ctx.editMessageText(`✅ Bron #${bookingId} bekor qilindi.`);
             // Refresh list after short delay
-            setTimeout(() => showBookings(ctx).catch(() => {}), 1000);
+            setTimeout(() => showBookings(ctx).catch(e => console.error('[bookings] refresh failed:', e.message)), 1000);
         } catch (err) {
             const msg = err.data?.error || err.message;
             await ctx.editMessageText(`❌ Xatolik: ${msg}`);

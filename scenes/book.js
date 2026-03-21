@@ -6,6 +6,10 @@ const bookScene = new Scenes.BaseScene('book');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function esc(str) {
+    return String(str || '').replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
+}
+
 function initBook(ctx) {
     if (!ctx.session.book) ctx.session.book = {};
     ctx.session.book.step = 'shops';
@@ -90,7 +94,7 @@ async function showBarbers(ctx) {
     buttons.push([Markup.button.callback('🔙 Ortga', 'book:back')]);
 
     await safeEdit(ctx,
-        `✂️ *${ctx.session.book.shopName}*\nSartarosh tanlang:`,
+        `✂️ *${esc(ctx.session.book.shopName)}*\nSartarosh tanlang:`,
         { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) }
     );
 }
@@ -125,7 +129,7 @@ async function showServices(ctx) {
     buttons.push([Markup.button.callback('🔙 Ortga', 'book:back')]);
 
     await safeEdit(ctx,
-        `💈 *${ctx.session.book.barberName}*\nXizmat tanlang:`,
+        `💈 *${esc(ctx.session.book.barberName)}*\nXizmat tanlang:`,
         { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) }
     );
 }
@@ -204,9 +208,9 @@ async function showConfirm(ctx) {
     const summary = [
         `✂️ *Bron xulosasi*`,
         ``,
-        `🏪 Sartaroshxona: *${b.shopName}*`,
-        `💈 Sartarosh: *${b.barberName}*`,
-        `📋 Xizmat: *${b.serviceName}*`,
+        `🏪 Sartaroshxona: *${esc(b.shopName)}*`,
+        `💈 Sartarosh: *${esc(b.barberName)}*`,
+        `📋 Xizmat: *${esc(b.serviceName)}*`,
         `💰 Narx: *${formatPrice(b.servicePrice)}*`,
         `⏱ Davomiyligi: *${b.serviceDuration} daqiqa*`,
         `🗓 Sana: *${formatDate(b.date)}*`,
@@ -271,9 +275,9 @@ bookScene.on('callback_query', async (ctx) => {
 
             await ctx.editMessageText(
                 `✅ *Bron muvaffaqiyatli qo'shildi!*\n\n` +
-                `📋 ${book.serviceName}\n` +
+                `📋 ${esc(book.serviceName)}\n` +
                 `🗓 ${formatDate(book.date)} • ${book.time}\n` +
-                `💈 ${book.barberName}`,
+                `💈 ${esc(book.barberName)}`,
                 { parse_mode: 'Markdown' }
             );
         } catch (err) {
