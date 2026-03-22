@@ -7,7 +7,7 @@ const bookScene = new Scenes.BaseScene('book');
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function esc(str) {
-    return String(str || '').replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
+    return String(str || '').slice(0, 200).replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
 }
 
 function initBook(ctx) {
@@ -281,7 +281,7 @@ bookScene.on('callback_query', async (ctx) => {
                 { parse_mode: 'Markdown' }
             );
         } catch (err) {
-            const msg = err.data?.error || err.message;
+            const msg = esc((err.data?.error || err.message || 'Noma\'lum xatolik').slice(0, 200));
             await ctx.editMessageText(`❌ Xatolik: ${msg}\n\nQayta urinib ko'ring.`);
         }
         return ctx.scene.leave();

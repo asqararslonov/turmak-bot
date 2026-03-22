@@ -5,7 +5,7 @@ const { formatDate, statusBadge } = require('../utils');
 const bookingsScene = new Scenes.BaseScene('bookings');
 
 function esc(str) {
-    return String(str || '').replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
+    return String(str || '').slice(0, 200).replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
 }
 
 async function showBookings(ctx) {
@@ -109,7 +109,7 @@ bookingsScene.on('callback_query', async (ctx) => {
             // Refresh list after short delay
             setTimeout(() => showBookings(ctx).catch(e => console.error('[bookings] refresh failed:', e.message)), 1000);
         } catch (err) {
-            const msg = err.data?.error || err.message;
+            const msg = esc((err.data?.error || err.message || 'Noma\'lum xatolik').slice(0, 200));
             await ctx.editMessageText(`❌ Xatolik: ${msg}`);
         }
         return;

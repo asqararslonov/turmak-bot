@@ -6,16 +6,25 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 async function request(path, options = {}) {
     const url = `${BASE}${path}`;
     const { headers: extraHeaders, ...restOptions } = options;
-    const res = await fetch(url, {
-        headers: {
-            'Content-Type': 'application/json',
-            ...extraHeaders,
-        },
-        ...restOptions,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), { status: res.status, data });
-    return data;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+        const res = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                ...extraHeaders,
+            },
+            ...restOptions,
+        });
+        clearTimeout(timeout);
+        const data = await res.json().catch(e => { console.error('[api] JSON parse error:', e.message); return {}; });
+        if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), { status: res.status, data });
+        return data;
+    } catch (err) {
+        clearTimeout(timeout);
+        throw err;
+    }
 }
 
 function authHeaders(token) {
@@ -42,15 +51,17 @@ async function getLocations() {
 
 // ── Barbers ────────────────────────────────────────────
 async function getBarbersByShop(barbershop_id) {
-    return request(`/barbers?barbershop_id=${barbershop_id}`);
+    const q = new URLSearchParams({ barbershop_id }).toString();
+    return request(`/barbers?${q}`);
 }
 
 async function getBarberServices(barber_id) {
-    return request(`/barbers/${barber_id}/services`);
+    return request(`/barbers/${encodeURIComponent(barber_id)}/services`);
 }
 
 async function getBarberAvailability(barber_id, date) {
-    return request(`/barbers/${barber_id}/availability?date=${date}`);
+    const q = new URLSearchParams({ date }).toString();
+    return request(`/barbers/${encodeURIComponent(barber_id)}/availability?${q}`);
 }
 
 // ── Bookings ───────────────────────────────────────────

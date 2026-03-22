@@ -13,10 +13,14 @@ const BOT_TOKEN     = process.env.BOT_TOKEN;
 const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID;
 const MINI_APP_URL  = process.env.MINI_APP_URL || 'https://t.me/turmak_bot/app';
 const API_BASE      = process.env.API_BASE     || 'https://turmak-api.vercel.app/api';
-const PORT          = parseInt(process.env.PORT) || 3001;
+const PORT          = parseInt(process.env.PORT, 10) || 3001;
 
 if (!BOT_TOKEN) {
     console.error('❌ BOT_TOKEN is not set in .env');
+    process.exit(1);
+}
+if (!OWNER_CHAT_ID) {
+    console.error('❌ OWNER_CHAT_ID is not set in .env');
     process.exit(1);
 }
 
@@ -263,6 +267,7 @@ app.post('/bot-webhook', async (req, res) => {
 });
 
 app.get('/setup-webhook', async (req, res) => {
+    if (req.query.token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
     const { url } = req.query;
     if (!url) return res.status(400).json({ error: 'url query param required' });
     try {
@@ -296,6 +301,8 @@ app.post('/waitlist', async (req, res) => {
 
     if (typeof name !== 'string' || typeof phone !== 'string')
         return res.status(400).json({ success: false, error: 'Invalid field types' });
+    if (typeof role !== 'string' || !/^[a-z]+$/.test(role))
+        return res.status(400).json({ success: false, error: 'Invalid role' });
     const safeName = escapeHtml(name.slice(0, 100));
     const safePhone = escapeHtml(phone.slice(0, 20));
     const safeTg = telegram ? `@${escapeHtml(telegram.replace(/^@/, '').slice(0, 50))}` : '—';
@@ -328,12 +335,15 @@ app.post('/waitlist', async (req, res) => {
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-app.get('/debug', (_req, res) => res.json({
-    has_bot_token:     !!process.env.BOT_TOKEN,
-    has_owner_chat_id: !!process.env.OWNER_CHAT_ID,
-    api_base:          API_BASE,
-    is_vercel:         !!process.env.VERCEL,
-}));
+app.get('/debug', (req, res) => {
+    if (req.query.token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
+    res.json({
+        has_bot_token:     !!process.env.BOT_TOKEN,
+        has_owner_chat_id: !!process.env.OWNER_CHAT_ID,
+        api_base:          API_BASE,
+        is_vercel:         !!process.env.VERCEL,
+    });
+});
 
 // ── Launch ─────────────────────────────────────────────────────────────────
 
