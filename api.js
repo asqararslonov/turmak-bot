@@ -41,7 +41,8 @@ async function botAuth({ telegram_id, phone, name, gender }) {
 
 // ── Barbershops ────────────────────────────────────────
 async function getBarbershops() {
-    return request('/barbershops');
+    const result = await request('/barbershops?limit=50');
+    return result.data ?? result; // handle paginated { data, total, hasMore } response
 }
 
 // ── Locations ──────────────────────────────────────────
